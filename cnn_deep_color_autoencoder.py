@@ -5,6 +5,7 @@ from keras.models import Model
 from keras import backend as K
 from keras.layers.core import Flatten
 from keras.layers import LeakyReLU, Activation
+from keras.layers.core import Reshape
 
 import matplotlib as m; m.use('Agg')
 import matplotlib.pyplot as plt
@@ -50,24 +51,29 @@ x = Conv2D(32, (3, 3), padding='same')(x)
 x = LeakyReLU(0.2)(x)
 #x = MaxPooling2D((2, 2), padding='same')(x)
 #x = Conv2D(32, (3, 3), activation='relu', padding='same')(x)
-encoded = MaxPooling2D((2, 2), padding='same')(x)
+x = MaxPooling2D((2, 2), padding='same')(x)
+x = Flatten()(x)
+x = Dense(1568)(x)
+encoded = LeakyReLU(0.2)(x)
 encoder = Model(input_img, encoded)
 # at this point the representation is (7, 7, 32)
 
 """ dec network """
+dec_0  = Reshape((7,7,32))
 dec_1  = Conv2D(32, (3, 3), padding='same')
-dec_2  = LeakyReLU(0.2)
+dec_2  = LeakyReLU(0.2, name="leaky_d1")
 dec_3  = UpSampling2D((2, 2))
 dec_4  = Conv2D(32, (3, 3), padding='same')
 dec_5  = LeakyReLU(0.2)
-dec_6  = UpSampling2D((1, 1))
+dec_6  = UpSampling2D((2, 2))
 dec_7  = Conv2D(3, (3, 3), padding='same')
 dec_8  = LeakyReLU(0.2)
 dec_9  = UpSampling2D((2, 2))
 dec_10 = Conv2D(3, (3, 3), padding='same')
-dec_11 = LeakyReLU(0.2)
+dec_11 = LeakyReLU(0.2, name="leaky_d4")
 """ define tensorflow """
-x     = dec_1(encoded)
+x     = dec_0(encoded)
+x     = dec_1(x)
 x     = dec_2(x)
 x     = dec_3(x)
 x     = dec_4(x)
@@ -84,8 +90,9 @@ autoencoder.compile(optimizer='adam', loss='binary_crossentropy')
 """ build decoder """
 print(encoded.shape)
 # ここのサイズはアドホック
-enc_in = Input(shape=(7*2,7*2,32,))
-x     = dec_1(enc_in)
+enc_in = Input(shape=(1568,))
+x     = dec_0(enc_in)
+x     = dec_1(x)
 x     = dec_2(x)
 x     = dec_3(x)
 x     = dec_4(x)
