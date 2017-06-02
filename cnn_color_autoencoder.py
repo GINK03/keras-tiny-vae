@@ -13,10 +13,11 @@ import sys
 from PIL import Image
 import glob
 import numpy as np
+BY = 2
 x_train = []
 x_test  = []
 for eg, name in enumerate(glob.glob("datasets/minimize/*")):
-  B  = 100
+  B  = 10
   im = Image.open(name)
   arr = np.array(im)
   if eg < 500*B:
@@ -34,8 +35,8 @@ x_test  = np.array(x_test)
 
 x_train = x_train.astype('float32') / 255.
 x_test = x_test.astype('float32') / 255.
-x_train = np.reshape(x_train, (len(x_train), 28, 28, 3))  # adapt this if using `channels_first` image data format
-x_test = np.reshape(x_test, (len(x_test), 28, 28, 3))  # adapt this if using `channels_first` image data format
+x_train = np.reshape(x_train, (len(x_train), 28*BY, 28*BY, 3))  # adapt this if using `channels_first` image data format
+x_test = np.reshape(x_test, (len(x_test), 28*BY, 28*BY, 3))  # adapt this if using `channels_first` image data format
 
 noise_factor = 0.5
 x_train_noisy = x_train + noise_factor * np.random.normal(loc=0.0, scale=1.0, size=x_train.shape) 
@@ -49,14 +50,14 @@ plt.figure(figsize=(20, 2))
 for i in range(n):
     ...
     ax = plt.subplot(1, n, i+1)
-    plt.imshow(x_test_noisy[i].reshape(28, 28, 3))
+    plt.imshow(x_test_noisy[i].reshape(28*BY, 28*BY, 3))
     plt.gray()
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
 plt.show()
 plt.savefig("orig.png")
 
-input_img = Input(shape=(28, 28, 3))  # adapt this if using `channels_first` image data format
+input_img = Input(shape=(28*BY, 28*BY, 3))  # adapt this if using `channels_first` image data format
 
 x = Conv2D(32, (3, 3), activation='relu', padding='same')(input_img)
 x = MaxPooling2D((2, 2), padding='same')(x)
@@ -86,7 +87,7 @@ autoencoder.compile(optimizer='adadelta', loss='binary_crossentropy')
 
 """ build decoder """
 print(encoded.shape)
-enc_in = Input(shape=(7,7,32,))
+enc_in = Input(shape=(7*BY,7*BY,32,))
 x     = dec_1(enc_in)
 x     = dec_2(x)
 x     = dec_3(x)
@@ -117,7 +118,7 @@ decoded_imgs = decoder.predict(encoded_imgs)
 for i in range(n):
     # display original
     ax = plt.subplot(2, n, i + 1)
-    plt.imshow(x_test[i].reshape(28, 28, 3))
+    plt.imshow(x_test[i].reshape(28*BY, 28*BY, 3))
     plt.gray()
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
@@ -125,7 +126,7 @@ for i in range(n):
     # display reconstruction
     ax = plt.subplot(2, n, i + 1 + n)
     print(decoded_imgs[i].shape)
-    plt.imshow(decoded_imgs[i].reshape(28, 28, 3))
+    plt.imshow(decoded_imgs[i].reshape(28*BY, 28*BY, 3))
     plt.gray()
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
