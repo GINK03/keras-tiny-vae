@@ -15,7 +15,7 @@ import sys
 from PIL import Image
 import glob
 import numpy as np
-BY = 8
+BY = 4
 x_train = []
 x_test  = []
 for eg, name in enumerate(glob.glob("datasets/minimize/*")):
@@ -70,13 +70,13 @@ dec_6  = UpSampling2D((2, 2))
 dec_7  = Conv2D(3, (3, 3), padding='same')
 dec_8  = LeakyReLU(0.2)
 dec_9  = UpSampling2D((2, 2))
-dec_10 = Conv2D(3, (3, 3), padding='same')
+dec_10 = Conv2D(3, (2, 2), padding='same')
 dec_11 = LeakyReLU(0.2, name="leaky_d4")
-dec_12 = UpSampling2D((2, 2))
-dec_13 = Conv2D(3, (3, 3), padding='same')
+dec_12 = UpSampling2D((1, 1))
+dec_13 = Conv2D(3, (2, 2), padding='same')
 dec_14 = LeakyReLU(0.2, name="leaky_d5")
 dec_15 = UpSampling2D((2, 2))
-dec_16 = Conv2D(3, (3, 3), padding='same')
+dec_16 = Conv2D(3, (2, 2), padding='same')
 dec_17 = LeakyReLU(0.2, name="leaky_d6")
 """ define tensorflow """
 x     = dec_0(encoded)
