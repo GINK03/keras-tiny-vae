@@ -3,6 +3,7 @@ import numpy as np
 from keras.layers import Input, Dense, Conv2D, MaxPooling2D, UpSampling2D
 from keras.models import Model
 from keras import backend as K
+from keras.layers.core import Flatten
 
 import matplotlib as m; m.use('Agg')
 import matplotlib.pyplot as plt
@@ -43,21 +44,34 @@ encoded = MaxPooling2D((2, 2), padding='same')(x)
 encoder = Model(input_img, encoded)
 # at this point the representation is (7, 7, 32)
 
-x = Conv2D(32, (3, 3), activation='relu', padding='same')(encoded)
-x = UpSampling2D((2, 2))(x)
-x = Conv2D(32, (3, 3), activation='relu', padding='same')(x)
-x = UpSampling2D((2, 2))(x)
-decoded = Conv2D(1, (3, 3), activation='sigmoid', padding='same')(x)
-
-
-autoencoder = Model(input_img, decoded)
+""" dec network """
+dec_1 = Conv2D(32, (3, 3), activation='relu', padding='same')
+dec_2 = UpSampling2D((2, 2))
+dec_3 = Conv2D(32, (3, 3), activation='relu', padding='same')
+dec_4 = UpSampling2D((2, 2))
+dec_5 = Conv2D(1, (3, 3), activation='relu', padding='same')
+#dec_6 = Flatten()
+#dec_7 = Dense(784)
+""" define tensorflow """
+x     = dec_1(encoded)
+x     = dec_2(x)
+x     = dec_3(x)
+x     = dec_4(x)
+x     = dec_5(x)
+#x     = dec_6(x)
+#x     = dec_7(x)
+autoencoder = Model(input_img, x)
 autoencoder.compile(optimizer='adadelta', loss='binary_crossentropy')
 
 """ build decoder """
 print(encoded.shape)
-encoded_input = Input(shape=(7,7,32,))
-decoder_layer = autoencoder.layers[-1]
-decoder = Model(encoded_input, decoder_layer(encoded_input))
+enc_in = Input(shape=(7,7,32,))
+x     = dec_1(enc_in)
+x     = dec_2(x)
+x     = dec_3(x)
+x     = dec_4(x)
+x     = dec_5(x)
+decoder = Model(enc_in, x)
 
 """
 autoencoder.fit(x_train_noisy, x_train,
@@ -89,8 +103,8 @@ for i in range(n):
 
     # display reconstruction
     ax = plt.subplot(2, n, i + 1 + n)
-    #print(decoded_imgs[i].shape)
-    #plt.imshow(decoded_imgs[i])
+    print(decoded_imgs[i].shape)
+    plt.imshow(decoded_imgs[i].reshape(28,28))
     plt.gray()
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
