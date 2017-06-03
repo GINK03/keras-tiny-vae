@@ -19,10 +19,15 @@ import numpy as np
 BY = 4
 x_train = []
 x_test  = []
-for eg, name in enumerate(glob.glob("datasets/minimize/*")):
-  B  = 2
+for eg, name in enumerate(glob.glob("minimize/*")):
+  B  = 100
   im = Image.open(name)
   arr = np.array(im)
+  try:
+    arr = arr.astype('float32') / 255.
+  except TypeError as e:
+    print(e)
+    continue
   if eg < 900*B:
     x_train.append( arr )
   else:
@@ -37,8 +42,8 @@ x_test  = np.array(x_test)
 
 #(x_train, _), (x_test, _) = mnist.load_data()
 
-x_train = x_train.astype('float32') / 255.
-x_test = x_test.astype('float32') / 255.
+#x_train = x_train.astype('float32') / 255.
+#x_test = x_test.astype('float32') / 255.
 x_train = np.reshape(x_train, (len(x_train), 28*BY, 28*BY, 3))  # adapt this if using `channels_first` image data format
 x_test = np.reshape(x_test, (len(x_test), 28*BY, 28*BY, 3))  # adapt this if using `channels_first` image data format
 
@@ -63,8 +68,8 @@ x = MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool')(x)
 #x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv3')(x)
 #x = MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool')(x)
 x = Flatten()(x)
-x = Dense(784)(x)
-encoded = LeakyReLU(0.2)(x)
+x = Dense(784, activation='linear')(x)
+encoded = x
 encoder = Model(input_img, encoded)
 # at this point the representation is (7, 7, 32)
 
@@ -136,7 +141,7 @@ decoder = Model(enc_in, x)
 if '--train' in sys.argv:
   for i in range(50):
     autoencoder.fit(x_train, x_train, \
-      epochs=10, \
+      epochs=1, \
       batch_size=128, \
       shuffle=True, \
       validation_data=(x_test, x_test) )
