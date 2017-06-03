@@ -11,6 +11,9 @@ import matplotlib as m; m.use('Agg')
 import matplotlib.pyplot as plt
 import sys
 from keras.models import load_model
+import json
+import re
+import os.path
 
 """ color対応 """
 from PIL import Image
@@ -24,13 +27,19 @@ print(target)
 autoencoder.load_weights(target)
 
 xs = []
+ns = []
 for eg, name in enumerate(glob.glob("../minimize/*")):
+  n  =  re.search(r"mini\.(illust_id=\d{1,})\.png", name).group(1)
+  if os.path.exists("vectors/{}.json".format(n)):
+    continue
   if xs != [] and eg % 1000 == 0:
     print("try to predict, now batch is %d"%eg)
     vs = encoder.predict( np.array(xs) )
-    for v in vs.tolist():
-      print(len(v))
+    for n, v in zip(ns, vs.tolist() ):
+      print(n, len(v))
+      open("vectors/{}.json".format(n), "w").write( json.dumps(v) )
     xs = []
+    ns = []
 
   
   try:
@@ -45,5 +54,6 @@ for eg, name in enumerate(glob.glob("../minimize/*")):
     print(e)
     continue
   xs.append( x )
+  ns.append( n )
 
 
