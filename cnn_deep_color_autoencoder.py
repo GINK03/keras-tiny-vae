@@ -17,11 +17,16 @@ from PIL import Image
 import glob
 import numpy as np
 BY = 4
+WIDTH = 2
 x_train = []
 x_test  = []
 for eg, name in enumerate(glob.glob("minimize/*")):
-  B  = 100
-  im = Image.open(name)
+  B  = 230
+  try:
+    im = Image.open(name)
+  except OSError as e:
+    print(e)
+    continue
   arr = np.array(im)
   try:
     arr = arr.astype('float32') / 255.
@@ -40,10 +45,6 @@ for eg, name in enumerate(glob.glob("minimize/*")):
 x_train = np.array(x_train)
 x_test  = np.array(x_test)
 
-#(x_train, _), (x_test, _) = mnist.load_data()
-
-#x_train = x_train.astype('float32') / 255.
-#x_test = x_test.astype('float32') / 255.
 x_train = np.reshape(x_train, (len(x_train), 28*BY, 28*BY, 3))  # adapt this if using `channels_first` image data format
 x_test = np.reshape(x_test, (len(x_test), 28*BY, 28*BY, 3))  # adapt this if using `channels_first` image data format
 
@@ -59,23 +60,23 @@ x = MaxPooling2D((2, 2), padding='same')(x)
 x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
 x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
 x = MaxPooling2D((2, 2), padding='same')(x)
-x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv1')(x)
-x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv2')(x)
-x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv3')(x)
+x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block3_conv1')(x)
+x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block3_conv2')(x)
 x = MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool')(x)
-#x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv1')(x)
-#x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv2')(x)
-#x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv3')(x)
+x = Conv2D(32, (3, 3), activation='relu', padding='same', name='block3_conv3')(x)
+x = Conv2D(32, (3, 3), activation='relu', padding='same', name='block4_conv1')(x)
+x = MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool')(x)
 #x = MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool')(x)
 x = Flatten()(x)
 x = Dense(784, activation='linear')(x)
 encoded = x
 encoder = Model(input_img, encoded)
 # at this point the representation is (7, 7, 32)
-
+print(encoded.shape)
+#sys.exit()
 """ dec network """
 dec_0  = Reshape((7,7,16))
-dec_1  = Conv2D(32, (3, 3), padding='same')
+dec_1  = Conv2D(32, (2, 2), padding='same')
 dec_2  = LeakyReLU(0.2, name="leaky_d1")
 dec_3  = UpSampling2D((2, 2))
 dec_4  = Conv2D(32, (3, 3), padding='same')
@@ -84,14 +85,14 @@ dec_6  = UpSampling2D((2, 2))
 dec_7  = Conv2D(3, (3, 3), padding='same')
 dec_8  = LeakyReLU(0.2)
 dec_9  = UpSampling2D((2, 2))
-dec_10 = Conv2D(3, (3, 3), padding='same')
+dec_10 = Conv2D(3, (2, 2), padding='same')
 dec_11 = LeakyReLU(0.2, name="leaky_d4")
 dec_12 = UpSampling2D((2, 2))
 dec_13 = Conv2D(3, (2, 2), padding='same')
 dec_14 = LeakyReLU(0.2, name="leaky_d5")
-#dec_15 = UpSampling2D((3, 3))
-#dec_16 = Conv2D(3, (3, 3), padding='same')
-#dec_17 = LeakyReLU(0.2, name="leaky_d6")
+dec_15 = UpSampling2D((1, 1))
+dec_16 = Conv2D(3, (3, 3), padding='same')
+dec_17 = LeakyReLU(0.2, name="leaky_d6")
 """ define tensorflow """
 x     = dec_0(encoded)
 x     = dec_1(x)
@@ -108,11 +109,11 @@ x     = dec_11(x)
 x     = dec_12(x)
 x     = dec_13(x)
 x     = dec_14(x)
-#x     = dec_15(x)
-#x     = dec_16(x)
-#x     = dec_17(x)
+x     = dec_15(x)
+x     = dec_16(x)
+x     = dec_17(x)
 autoencoder = Model(input_img, x)
-autoencoder.compile(optimizer='adam', loss='binary_crossentropy')
+autoencoder.compile(optimizer='adam', loss='mse')
 
 """ build decoder """
 print(encoded.shape)
@@ -133,13 +134,13 @@ x     = dec_11(x)
 x     = dec_12(x)
 x     = dec_13(x)
 x     = dec_14(x)
-#x     = dec_15(x)
-#x     = dec_16(x)
-#x     = dec_17(x)
+x     = dec_15(x)
+x     = dec_16(x)
+x     = dec_17(x)
 decoder = Model(enc_in, x)
 
 if '--train' in sys.argv:
-  for i in range(50):
+  for i in range(100):
     autoencoder.fit(x_train, x_train, \
       epochs=1, \
       batch_size=128, \
@@ -150,6 +151,7 @@ if '--train' in sys.argv:
 if '--eval' in sys.argv: 
   target = sorted(glob.glob("models/cnn_model_*.h5")).pop()
   print(target)
+  #sys.exit()
   autoencoder.load_weights(target)
 n = 50  # how many digits we will display
 plt.figure(figsize=(200, 40))
