@@ -10,6 +10,7 @@ from keras.layers.core import Reshape
 import matplotlib as m; m.use('Agg')
 import matplotlib.pyplot as plt
 import sys
+from keras.models import load_model
 
 """ color対応 """
 from PIL import Image
@@ -19,7 +20,7 @@ BY = 4
 x_train = []
 x_test  = []
 for eg, name in enumerate(glob.glob("datasets/minimize/*")):
-  B  = 10
+  B  = 2
   im = Image.open(name)
   arr = np.array(im)
   if eg < 900*B:
@@ -44,15 +45,23 @@ x_test = np.reshape(x_test, (len(x_test), 28*BY, 28*BY, 3))  # adapt this if usi
 
 input_img = Input(shape=(28*BY, 28*BY, 3))  # adapt this if using `channels_first` image data format
 
-x = Conv2D(32, (3, 3), padding='same')(input_img)
-x = LeakyReLU(0.2)(x)
+x = Conv2D(32, (3, 3), activation='relu', padding='same')(input_img)
+x = Conv2D(32, (3, 3), activation='relu', padding='same')(x)
 x = MaxPooling2D((2, 2), padding='same')(x)
-x = Conv2D(32, (3, 3), padding='same')(x)
-x = LeakyReLU(0.2)(x)
+x = Conv2D(64, (3, 3), activation='relu', padding='same')(x)
+x = Conv2D(64, (3, 3), activation='relu', padding='same')(x)
 x = MaxPooling2D((2, 2), padding='same')(x)
-x = Conv2D(32, (3, 3), padding='same')(x)
-x = LeakyReLU(0.2)(x)
+x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
+x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
 x = MaxPooling2D((2, 2), padding='same')(x)
+x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv1')(x)
+x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv2')(x)
+x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv3')(x)
+x = MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool')(x)
+x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv1')(x)
+x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv2')(x)
+x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv3')(x)
+x = MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool')(x)
 x = Flatten()(x)
 x = Dense(784)(x)
 encoded = LeakyReLU(0.2)(x)
@@ -125,15 +134,20 @@ x     = dec_17(x)
 decoder = Model(enc_in, x)
 
 if '--train' in sys.argv:
-  autoencoder.fit(x_train, x_train,
-    epochs=100,
-    batch_size=128,
-    shuffle=True,
-    validation_data=(x_test, x_test),
-    )
-  autoencoder.save('models/cnn_model.h5')
-n = 20  # how many digits we will display
-plt.figure(figsize=(20, 4))
+  for i in range(50):
+    autoencoder.fit(x_train, x_train, \
+      epochs=10, \
+      batch_size=128, \
+      shuffle=True, \
+      validation_data=(x_test, x_test) )
+    autoencoder.save('models/cnn_model_%08d.h5'%i)
+
+if '--eval' in sys.argv: 
+  target = sorted(glob.glob("models/cnn_model_*.h5")).pop()
+  print(target)
+  autoencoder.load_weights(target)
+n = 50  # how many digits we will display
+plt.figure(figsize=(200, 40))
 encoded_imgs = encoder.predict(x_test)
 decoded_imgs = decoder.predict(encoded_imgs)
 for i in range(n):
