@@ -148,6 +148,17 @@ if '--train' in sys.argv:
       validation_data=(x_test, x_test) )
     autoencoder.save('models/cnn_model_%08d.h5'%i)
 
+if '--resume-train' in sys.argv:
+  target = sorted(glob.glob("models/cnn_model_*.h5")).pop()
+  autoencoder.load_weights(target)
+  for i in range(100):
+    autoencoder.fit(x_train, x_train, \
+      epochs=1, \
+      batch_size=128, \
+      shuffle=True, \
+      validation_data=(x_test, x_test) )
+    autoencoder.save('models/cnn_model_%08d.h5'%i)
+
 if '--eval' in sys.argv: 
   target = sorted(glob.glob("models/cnn_model_*.h5")).pop()
   print(target)
