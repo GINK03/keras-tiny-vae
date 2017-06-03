@@ -25,7 +25,7 @@ WIDTH = 2
 x_train = []
 x_test  = []
 for eg, name in enumerate(glob.glob("../minimize/*")):
-  B  = 2
+  B  = 230
   try:
     im = Image.open(name)
   except OSError as e:
@@ -37,7 +37,7 @@ for eg, name in enumerate(glob.glob("../minimize/*")):
   except TypeError as e:
     print(e)
     continue
-  if eg < 900*B:
+  if eg < 950*B:
     x_train.append( arr )
   else:
     x_test.append( arr )
