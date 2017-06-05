@@ -16,7 +16,7 @@ from keras.models import load_model
 from PIL import Image
 import glob
 import numpy as np
-
+import random
 """ モデルを読み込み """
 from cnn_deep_color_model import *
 
@@ -24,8 +24,11 @@ BY = 4
 WIDTH = 2
 x_train = []
 x_test  = []
-for eg, name in enumerate(glob.glob("../minimize/*")):
-  B  = 2
+
+files   = glob.glob("../PixivImageScraper/minimize/*")
+random.shuffle( files ) 
+for eg, name in enumerate(files):
+  B  = 5
   try:
     im = Image.open(name)
   except OSError as e:
@@ -53,7 +56,7 @@ x_train = np.reshape(x_train, (len(x_train), 28*BY, 28*BY, 3))  # adapt this if 
 x_test = np.reshape(x_test, (len(x_test), 28*BY, 28*BY, 3))  # adapt this if using `channels_first` image data format
 
 if '--train' in sys.argv:
-  for i in range(100):
+  for i in range(10):
     autoencoder.fit(x_train, x_train, \
       epochs=1, \
       batch_size=128, \
@@ -64,7 +67,7 @@ if '--train' in sys.argv:
 if '--resume-train' in sys.argv:
   target = sorted(glob.glob("models/cnn_model_*.h5")).pop()
   autoencoder.load_weights(target)
-  for i in range(100):
+  for i in range(10):
     autoencoder.fit(x_train, x_train, \
       epochs=1, \
       batch_size=128, \
