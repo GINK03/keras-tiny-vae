@@ -88,28 +88,133 @@ def step3():
   for e, (userid, metavec) in enumerate(db):
     if e % 500 == 0:
       print("now iter ", e)
-    if e > 50000:
+    if e > 25000:
       break
     metavec = pickle.loads(metavec)
     vs.append( metavec["v"] )
   vs = np.array( vs )
   print("finished make numpy")
-  kmeans = KMeans(n_clusters=1024, random_state=0)
+  kmeans = KMeans(n_clusters=256, random_state=0)
   print("fit by kmeans")
   kmeans.fit(vs)
   print("fnished fitting by kmeans")
   open("kmeans-1.pkl", "wb").write( pickle.dumps(kmeans) )
 
 """ clustringして、各メタデータをマップ """
-def step3():
+def step4():
   db      = plyvel.DB('userid_metavec.ldb', create_if_missing=False)
   keams_1 = pickle.loads( open("kmeans-1.pkl", "rb").read() )
-  for e, (userid, metavec) in enumerate(db):
+ 
+  def _step4_dataset():
+    c_ms    = {}
+    for e, (userid, metavec) in enumerate(db):
+      if e % 500 == 0:
+        print("now iter ", e)
+      if e > 250000:
+        break
+      m = pickle.loads(metavec)
+      v = m['v']
+      c = keams_1.predict( np.array( [v] ) ).tolist().pop()
+      ... #print(c)
+      if c_ms.get(c) is None:
+        c_ms[c] = []
+      c_ms[c].append( m )
+   
+    open("c_ms.pkl", "wb").write( pickle.dumps(c_ms) )
+    return c_ms
+
+  c_ms = _step4_dataset()
+  #c_ms = pickle.loads( open("c_ms.pkl", "rb").read() )
+  
+  for c, ms in sorted(c_ms.items(), key=lambda x:x[0]*-1): 
+    print("try cluster {} to convert mini-cluster ".format(c) )
+    vs = np.array( list(map(lambda x:x['v'], ms)) )
+    try:
+      kmeans = KMeans(n_clusters=128, random_state=0)
+      kmeans.fit(vs)
+    except ValueError as e: 
+      try:
+        kmeans = KMeans(n_clusters=64, random_state=0)
+        kmeans.fit(vs)
+      except ValueError as e: 
+        try:
+          kmeans = KMeans(n_clusters=32, random_state=0)
+          kmeans.fit(vs)
+        except ValueError as e: 
+          try:
+            kmeans = KMeans(n_clusters=16, random_state=0)
+            kmeans.fit(vs)
+          except ValueError as e: 
+            try:
+              kmeans = KMeans(n_clusters=8, random_state=0)
+              kmeans.fit(vs)
+            except ValueError as e: 
+              try:
+                kmeans = KMeans(n_clusters=4, random_state=0)
+                kmeans.fit(vs)
+              except ValueError as e: 
+                try:
+                  kmeans = KMeans(n_clusters=2, random_state=0)
+                  kmeans.fit(vs)
+                except ValueError as e: 
+                  try:
+                    kmeans = KMeans(n_clusters=1, random_state=0)
+                    kmeans.fit(vs)
+                  except ValueError as e: 
+                    print("Error !!", e)
+                    ...
+    open("kmeans-2_{}.pkl".format(c), "wb").write( pickle.dumps(kmeans) )
+    print("finish {}".format(c) )
+
+""" クラスタをキーとしてKVSに保存 """
+def dbsync(chaine, key, val):
+  db = plyvel.DB('chaineDbs/{}.ldb'.format(chaine), create_if_missing=True)
+  db.put(key, val)
+  #db.close()
+
+
+def step5():
+  data_db      = plyvel.DB('userid_metavec.ldb', create_if_missing=True)
+  keams_1 = pickle.loads( open("kmeans/kmeans-1.pkl", "rb").read() )
+
+  subclus_kmean = {}
+
+  clus_db       = {}
+  for sub in sorted(glob.glob("kmeans/kmeans-2_*.pkl")):
+    sub_clus = re.search(r"2_(\d{1,}).pkl", sub).group(1)
+    print(sub_clus)
+    subclus_kmean[int(sub_clus)] = pickle.loads(open(sub, "rb").read())
+    #clus_db[int(sub_clus)]       = plyvel.DB('chaineDbs/{}.ldb'.format(sub_clus), create_if_missing=True)
+ 
+  chaine_key_val = {}
+  for e, (userid, metavec) in enumerate(data_db):
     if e % 500 == 0:
       print("now iter ", e)
-    v = pickle.loads(metavec)
-    c = keams_1.predict( np.array( [v] ) )
-    print(c)
+    if e > 1000000:
+      break
+    m = pickle.loads(metavec)
+    v = m['v']
+    c  = keams_1.predict( np.array( [v] ) ).tolist().pop()
+    submean = subclus_kmean[c]
+    sc = submean.predict( np.array( [v] ) ).tolist().pop()
+    chaine = "_".join( map(str, [c,sc]) )
+    key    = bytes( ",".join( map(str, v ) ) , 'utf8' )
+    val    = pickle.dumps(m)
+    if chaine_key_val.get(chaine) is None:
+      chaine_key_val[chaine] = {}
+    chaine_key_val[chaine][key] = val
+  
+  c = 0
+  for chaine, key_val in chaine_key_val.items():
+    db = plyvel.DB('chaineDbs/{}.ldb'.format(chaine), create_if_missing=True)
+    for key, val in key_val.items():
+      c += 1
+      if c % 500 == 0:
+        print("now mapping {}".format(c) )
+      db.put(key, val)
+    
+    
+
 
      
 if __name__ == '__main__':
@@ -119,3 +224,7 @@ if __name__ == '__main__':
     step2()
   if '--step3' in sys.argv:
     step3()
+  if '--step4' in sys.argv:
+    step4()
+  if '--step5' in sys.argv:
+    step5()

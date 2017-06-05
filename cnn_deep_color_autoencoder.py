@@ -25,7 +25,7 @@ WIDTH = 2
 x_train = []
 x_test  = []
 for eg, name in enumerate(glob.glob("../minimize/*")):
-  B  = 230
+  B  = 2
   try:
     im = Image.open(name)
   except OSError as e:

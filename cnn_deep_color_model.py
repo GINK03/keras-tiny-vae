@@ -19,14 +19,15 @@ BY = 4
 
 input_img = Input(shape=(28*BY, 28*BY, 3))  # adapt this if using `channels_first` image data format
 
-x = Conv2D(32, (3, 3), padding='same')(input_img)
-x = LeakyReLU(0.2)(x)
+x = Conv2D(64, (3, 3), activation='relu', padding='same')(input_img)
+x = Conv2D(64, (3, 3), activation='relu', padding='same')(input_img)
 x = MaxPooling2D((2, 2), padding='same')(x)
-x = Conv2D(32, (3, 3), padding='same')(x)
-x = LeakyReLU(0.2)(x)
+x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
+x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
 x = MaxPooling2D((2, 2), padding='same')(x)
-x = Conv2D(32, (3, 3), padding='same')(x)
-x = LeakyReLU(0.2)(x)
+x = Conv2D(256, (3, 3), activation='relu' , padding='same')(x)
+x = Conv2D(256, (3, 3), activation='relu' , padding='same')(x)
+x = Conv2D(256, (3, 3), activation='relu' , padding='same')(x)
 x = MaxPooling2D((2, 2), padding='same')(x)
 x = Flatten()(x)
 x = Dense(784)(x)
