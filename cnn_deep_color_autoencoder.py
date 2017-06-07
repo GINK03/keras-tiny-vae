@@ -25,10 +25,10 @@ WIDTH = 2
 x_train = []
 x_test  = []
 
-files   = glob.glob("../PixivImageScraper/minimize/*")
+files   = glob.glob("../minimize/*")
 random.shuffle( files ) 
 for eg, name in enumerate(files):
-  B  = 5
+  B  = 100
   try:
     im = Image.open(name)
   except OSError as e:
@@ -66,14 +66,15 @@ if '--train' in sys.argv:
 
 if '--resume-train' in sys.argv:
   target = sorted(glob.glob("models/cnn_model_*.h5")).pop()
+  print(target)
   autoencoder.load_weights(target)
-  for i in range(10):
+  for i in range(3):
     autoencoder.fit(x_train, x_train, \
       epochs=1, \
       batch_size=128, \
       shuffle=True, \
       validation_data=(x_test, x_test) )
-    autoencoder.save('models/cnn_model_%08d.h5'%i)
+  autoencoder.save('models/cnn_model_%08d.h5'%i)
 
 if '--eval' in sys.argv: 
   target = sorted(glob.glob("models/cnn_model_*.h5")).pop()
