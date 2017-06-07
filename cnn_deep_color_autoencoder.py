@@ -28,7 +28,7 @@ x_test  = []
 files   = glob.glob("../minimize/*")
 random.shuffle( files ) 
 for eg, name in enumerate(files):
-  B  = 100
+  B  = 50
   try:
     im = Image.open(name)
   except OSError as e:
