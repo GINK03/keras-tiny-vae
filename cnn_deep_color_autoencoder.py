@@ -4,7 +4,7 @@ from keras.layers import Input, Dense, Conv2D, MaxPooling2D, UpSampling2D
 from keras.models import Model
 from keras import backend as K
 from keras.layers.core import Flatten
-from keras.layers import LeakyReLU, Activation
+from keras.layers import LeakyReLU, Activation, Layer
 from keras.layers.core import Reshape
 
 import matplotlib as m; m.use('Agg')
