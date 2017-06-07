@@ -28,7 +28,7 @@ x_test  = []
 files   = glob.glob("../minimize/*")
 random.shuffle( files ) 
 for eg, name in enumerate(files):
-  B  = 50
+  B  = 75 
   try:
     im = Image.open(name)
   except OSError as e:
@@ -74,7 +74,7 @@ if '--resume-train' in sys.argv:
       batch_size=128, \
       shuffle=True, \
       validation_data=(x_test, x_test) )
-  autoencoder.save('models/cnn_model_%08d.h5'%i)
+    autoencoder.save('models/cnn_model_%08d.h5'%i)
 
 if '--eval' in sys.argv: 
   target = sorted(glob.glob("models/cnn_model_*.h5")).pop()
